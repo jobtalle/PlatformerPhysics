@@ -53,6 +53,22 @@ PlatformerNode.prototype = {
 	
 	getCellLeft(x, resolution) {
 		return Math.floor((x + PlatformerGrid.prototype.EPSILON) / resolution);
+	},
+	
+	limitXSpeed(timeStep) {
+		if(this.vx * timeStep < -this.width + PlatformerGrid.prototype.EPSILON)
+			this.vx = -this.width / timeStep + PlatformerGrid.prototype.EPSILON;
+		
+		if(this.vx * timeStep > this.width - PlatformerGrid.prototype.EPSILON)
+			this.vx = this.width / timeStep - PlatformerGrid.prototype.EPSILON;
+	},
+	
+	limitYSpeed(timeStep) {
+		if(this.vy * timeStep < -this.height + PlatformerGrid.prototype.EPSILON)
+			this.vy = -this.height / timeStep + PlatformerGrid.prototype.EPSILON;
+		
+		if(this.vy * timeStep > this.height - PlatformerGrid.prototype.EPSILON)
+			this.vy = this.height / timeStep - PlatformerGrid.prototype.EPSILON;
 	}
 };
 
@@ -129,15 +145,9 @@ PlatformerGrid.prototype = {
 			
 			// Move horizontally
 			if(node.vx != 0) {
+				node.limitXSpeed(timeStep);
+				
 				var vx = node.vx * timeStep;
-				
-				// Limit horizontal speed
-				if(vx < -node.width + this.EPSILON)
-					vx = -node.width + this.EPSILON;
-				
-				if(vx > node.width - this.EPSILON)
-					vx = node.width - this.EPSILON;
-				
 				const xp = node.x;
 				node.x += vx;
 				
@@ -147,7 +157,8 @@ PlatformerGrid.prototype = {
 						const yCells = node.getYCells(this.resolution);
 						
 						for(var y = yCells.start; y <= yCells.end; ++y) {
-							if(this.getWall(node.getCellRight(node.x, this.resolution), y)) {
+							if(this.getWall(node.getCellRight(node.x, this.resolution), y) ||
+							(y != yCells.start && this.getCeiling(node.getCellRight(node.x, this.resolution), y))) {
 								node.vx = 0;
 								node.x = node.getCellRight(node.x, this.resolution) * this.resolution - node.width;
 								
@@ -161,7 +172,8 @@ PlatformerGrid.prototype = {
 						const yCells = node.getYCells(this.resolution);
 						
 						for(var y = yCells.start; y<= yCells.end; ++y) {
-							if(this.getWall(node.getCellLeft(xp, this.resolution), y)) {
+							if(this.getWall(node.getCellLeft(xp, this.resolution), y) ||
+							(y != yCells.start && this.getCeiling(node.getCellLeft(node.x, this.resolution), y))) {
 								node.vx = 0;
 								node.x = node.getCellLeft(xp, this.resolution) * this.resolution;
 								
@@ -178,7 +190,8 @@ PlatformerGrid.prototype = {
 					for(var x = xCells.start; x <= xCells.end; ++x) {
 						node.onGround = false;
 						
-						if(this.getCeiling(x, node.getCellBottom(node.y, this.resolution) + 1)) {
+						if(this.getCeiling(x, node.getCellBottom(node.y, this.resolution) + 1) ||
+							(x != xCells.start && this.getWall(x, node.getCellBottom(node.y, this.resolution) + 1))) {
 							node.onGround = true;
 							
 							break;
@@ -210,15 +223,9 @@ PlatformerGrid.prototype = {
 			
 			// Mover vertically
 			if(node.vy != 0) {
+				node.limitYSpeed(timeStep);
+				
 				var vy = node.vy * timeStep;
-				
-				// Limit vertical speed
-				if(vy < -node.height + this.EPSILON)
-					vy = -node.height + this.EPSILON;
-				
-				if(vy > node.height - this.EPSILON)
-					vy = node.height - this.EPSILON;
-				
 				const yp = node.y;
 				node.y += vy;
 				
@@ -228,7 +235,8 @@ PlatformerGrid.prototype = {
 						const xCells = node.getXCells(this.resolution);
 						
 						for(var x = xCells.start; x <= xCells.end; ++x) {
-							if(this.getCeiling(x, node.getCellBottom(node.y, this.resolution))) {
+							if(this.getCeiling(x, node.getCellBottom(node.y, this.resolution)) ||
+								(x != xCells.start && this.getWall(x, node.getCellBottom(node.y, this.resolution)))) {
 								node.onGround = true;
 								node.vy = 0;
 								node.y = node.getCellBottom(node.y, this.resolution) * this.resolution - node.height;
@@ -243,7 +251,8 @@ PlatformerGrid.prototype = {
 						const xCells = node.getXCells(this.resolution);
 						
 						for(var x = xCells.start; x <= xCells.end; ++x) {
-							if(this.getCeiling(x, node.getCellTop(yp, this.resolution))) {
+							if(this.getCeiling(x, node.getCellTop(yp, this.resolution)) ||
+								(x != xCells.start && this.getWall(x, node.getCellTop(node.y, this.resolution)))) {
 								node.vy = 0;
 								node.y = node.getCellTop(yp, this.resolution) * this.resolution;
 								
