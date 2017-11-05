@@ -78,7 +78,7 @@ PlatformerGrid.prototype = {
 	EPSILON: 0.0000001,
 	
 	validateCoordinates(x, y) {
-		if(x < 0 || y < 0 || x > this.width || y > this.height)
+		if(x < 0 || y < 0 || x >= this.width || y >= this.height)
 			return false;
 		
 		return true;

@@ -20,7 +20,11 @@ function Game() {
 		this.grid.setCeiling(x, this.grid.height - 1, true);
 	
 	// Create a player
-	this.player = new PlatformerNode(100, 100, this.PLAYER_SIZE, this.PLAYER_SIZE);
+	this.player = new PlatformerNode(
+		this.PLAYER_SPAWN_X,
+		this.PLAYER_SPAWN_Y,
+		this.PLAYER_SIZE,
+		this.PLAYER_SIZE);
 	this.grid.addNode(this.player);
 	
 	this.addListeners();
@@ -28,14 +32,16 @@ function Game() {
 
 Game.prototype = {
 	GRID_RESOLUTION: 32,
-	PLAYER_SIZE: 24,
+	PLAYER_SIZE: 48,
 	PAINT_STROKE_STYLE: "lime",
 	PAINT_LINE_WIDTH: 3,
 	ERASE_STROKE_STYLE: "red",
 	ERASE_LINE_WIDTH: 3,
-	PLAYER_JUMP_SPEED: -800,
+	PLAYER_JUMP_SPEED: -650,
 	PLAYER_WALK_SPEED: 270,
 	PLAYER_WALK_ACCELERATION: 2500,
+	PLAYER_SPAWN_X: 100,
+	PLAYER_SPAWN_Y: 100,
 	KEY_JUMP: 87,
 	KEY_LEFT: 65,
 	KEY_RIGHT: 68,
@@ -156,6 +162,18 @@ Game.prototype = {
 		
 		if(this.leftDown) {
 			this.player.setvx(Math.max(this.player.vx - this.PLAYER_WALK_ACCELERATION * timeStep, -this.PLAYER_WALK_SPEED));
+		}
+		
+		// Reset player if moved out of screen
+		const canvas = this.getCanvas();
+		
+		if(
+			this.player.x < -this.player.width ||
+			this.player.y < -this.player.height ||
+			this.player.x > canvas.width ||
+			this.player.y > canvas.height) {
+			this.player.x = this.PLAYER_SPAWN_X;
+			this.player.y = this.PLAYER_SPAWN_Y;
 		}
 	},
 
