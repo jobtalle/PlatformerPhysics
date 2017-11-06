@@ -34,12 +34,10 @@ Game.prototype = {
 	GRID_RESOLUTION: 32,
 	PLAYER_SIZE: 48,
 	PAINT_STROKE_STYLE: "lime",
-	PAINT_LINE_WIDTH: 3,
 	ERASE_STROKE_STYLE: "red",
-	ERASE_LINE_WIDTH: 3,
 	PLAYER_JUMP_SPEED: -650,
 	PLAYER_WALK_SPEED: 270,
-	PLAYER_WALK_ACCELERATION: 2500,
+	PLAYER_WALK_ACCELERATION: 3500,
 	PLAYER_SPAWN_X: 100,
 	PLAYER_SPAWN_Y: 100,
 	KEY_JUMP: 87,
@@ -111,15 +109,15 @@ Game.prototype = {
 	mouseMove(e) {
 		const bounds = this.getCanvas().getBoundingClientRect();
 		
-		// Store mouse coordinates
 		this.mouseX = e.clientX - bounds.left;
 		this.mouseY = e.clientY - bounds.top;
-		
-		// Store current grid cell
 		this.gridX = Math.floor(this.mouseX / this.GRID_RESOLUTION);
 		this.gridY = Math.floor(this.mouseY / this.GRID_RESOLUTION);
 		
-		// Determine selected edge
+		this.findSelectedEdge();
+	},
+	
+	findSelectedEdge() {
 		const deltaX = this.mouseX - this.gridX * this.GRID_RESOLUTION;
 		const deltaY = this.mouseY - this.gridY * this.GRID_RESOLUTION;
 		this.gridWall = deltaX * deltaX < deltaY * deltaY;
@@ -164,14 +162,11 @@ Game.prototype = {
 			this.player.setvx(Math.max(this.player.vx - this.PLAYER_WALK_ACCELERATION * timeStep, -this.PLAYER_WALK_SPEED));
 		}
 		
-		// Reset player if moved out of screen
-		const canvas = this.getCanvas();
-		
 		if(
 			this.player.x < -this.player.width ||
 			this.player.y < -this.player.height ||
-			this.player.x > canvas.width ||
-			this.player.y > canvas.height) {
+			this.player.x > this.getCanvas().width ||
+			this.player.y > this.getCanvas().height) {
 			this.player.x = this.PLAYER_SPAWN_X;
 			this.player.y = this.PLAYER_SPAWN_Y;
 		}
@@ -188,29 +183,22 @@ Game.prototype = {
 		// Draw selected edge
 		if(this.gridX != -1 && this.gridY != -1) {
 			context.beginPath();
+			context.lineWidth = PlatformerGrid.prototype.EDGE_LINE_WIDTH;
 			
 			if(this.gridWall) {
-				if(this.grid.getWall(this.gridX, this.gridY)) {
+				if(this.grid.getWall(this.gridX, this.gridY))
 					context.strokeStyle = this.ERASE_STROKE_STYLE;
-					context.lineWidth = this.ERASE_LINE_WIDTH;
-				}
-				else {
+				else
 					context.strokeStyle = this.PAINT_STROKE_STYLE;
-					context.lineWidth = this.PAINT_LINE_WIDTH;
-				}
 				
 				context.moveTo(this.gridX * this.GRID_RESOLUTION, this.gridY * this.GRID_RESOLUTION);
 				context.lineTo(this.gridX * this.GRID_RESOLUTION, (this.gridY + 1) * this.GRID_RESOLUTION);
 			}
 			else {
-				if(this.grid.getCeiling(this.gridX, this.gridY)) {
+				if(this.grid.getCeiling(this.gridX, this.gridY))
 					context.strokeStyle = this.ERASE_STROKE_STYLE;
-					context.lineWidth = this.ERASE_LINE_WIDTH;
-				}
-				else {
+				else
 					context.strokeStyle = this.PAINT_STROKE_STYLE;
-					context.lineWidth = this.PAINT_LINE_WIDTH;
-				}
 				
 				context.moveTo(this.gridX * this.GRID_RESOLUTION, this.gridY * this.GRID_RESOLUTION);
 				context.lineTo((this.gridX + 1) * this.GRID_RESOLUTION, this.gridY * this.GRID_RESOLUTION);

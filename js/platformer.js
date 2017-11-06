@@ -1,8 +1,10 @@
+// Grid cell, can have a wall on the left and a ceiling on top
 function PlatformerGridCell() {
 	this.wall = false;
 	this.ceiling = false;
 };
 
+// Platformer node, a dynamic object in the grid
 function PlatformerNode(x, y, width, height) {
 	this.x = x;
 	this.y = y;
@@ -55,24 +57,46 @@ PlatformerNode.prototype = {
 		return Math.floor((x + PlatformerGrid.prototype.EPSILON) / resolution);
 	},
 	
+	collideCellBottom(resolution) {
+		this.onGround = true;
+		this.vy = 0;
+		this.y = this.getCellBottom(this.y, resolution) * resolution - this.height;
+	},
+	
+	collideCellTop(resolution) {
+		this.vy = 0;
+		this.y = this.getCellTop(this.yp, resolution) * resolution;
+	},
+	
+	collideCellRight(resolution) {
+		this.vx = 0;
+		this.x = this.getCellRight(this.x, resolution) * resolution - this.width;
+	},
+	
+	collideCellLeft(resolution) {
+		this.vx = 0;
+		this.x = this.getCellLeft(this.xp, resolution) * resolution;
+	},
+	
 	limitXSpeed(timeStep) {
 		if(this.vx * timeStep < -this.width + PlatformerGrid.prototype.EPSILON)
-			this.vx = -this.width / timeStep + PlatformerGrid.prototype.EPSILON;
+			this.vx = (-this.width + PlatformerGrid.prototype.EPSILON) / timeStep;
 		
 		if(this.vx * timeStep > this.width - PlatformerGrid.prototype.EPSILON)
-			this.vx = this.width / timeStep - PlatformerGrid.prototype.EPSILON;
+			this.vx = (this.width - PlatformerGrid.prototype.EPSILON) / timeStep;
 	},
 	
 	limitYSpeed(timeStep) {
 		if(this.vy * timeStep < -this.height + PlatformerGrid.prototype.EPSILON)
-			this.vy = -this.height / timeStep + PlatformerGrid.prototype.EPSILON;
+			this.vy = (-this.height + PlatformerGrid.prototype.EPSILON) / timeStep;
 		
 		if(this.vy * timeStep > this.height - PlatformerGrid.prototype.EPSILON)
-			this.vy = this.height / timeStep - PlatformerGrid.prototype.EPSILON;
+			this.vy = (this.height - PlatformerGrid.prototype.EPSILON) / timeStep;
 	}
 };
 
-function PlatformerGrid(width, height, resolution, gravity = 2500, friction = 1200) {
+// The grid, containing cells and nodes colliding with cell walls
+function PlatformerGrid(width, height, resolution, gravity = 2500, friction = 1700) {
 	this.width = width + 1;
 	this.height = height + 1;
 	this.resolution = resolution;
@@ -87,7 +111,7 @@ function PlatformerGrid(width, height, resolution, gravity = 2500, friction = 12
 
 PlatformerGrid.prototype = {
 	EDGE_STROKE_STYLE: "blue",
-	EDGE_LINE_WIDTH: 2,
+	EDGE_LINE_WIDTH: 4,
 	GRID_STROKE_STYLE: "gray",
 	GRID_LINE_WIDTH: 0.5,
 	PLAYER_FILL_STYLE: "red",
@@ -100,32 +124,32 @@ PlatformerGrid.prototype = {
 		return true;
 	},
 	
+	getCell(x, y) {
+		return this.cells[x + y * this.width];
+	},
+	
 	getWall(x, y) {
 		if(!this.validateCoordinates(x, y))
 			return false;
 		
-		return this.cells[x + y * this.width].wall;
+		return this.getCell(x, y).wall;
 	},
 
 	getCeiling(x, y) {
 		if(!this.validateCoordinates(x, y))
 			return false;
 		
-		return this.cells[x + y * this.width].ceiling;
+		return this.getCell(x, y).ceiling;
 	},
 
 	setWall(x, y, wall) {
-		if(!this.validateCoordinates(x, y))
-			return;
-		
-		this.cells[x + y * this.width].wall = wall;
+		if(this.validateCoordinates(x, y))
+			this.getCell(x, y).wall = wall;
 	},
 
 	setCeiling(x, y, ceiling) {
-		if(!this.validateCoordinates(x, y))
-			return;
-		
-		this.cells[x + y * this.width].ceiling = ceiling;
+		if(this.validateCoordinates(x, y))
+			this.getCell(x, y).ceiling = ceiling;
 	},
 
 	addNode(node) {
@@ -148,19 +172,18 @@ PlatformerGrid.prototype = {
 				node.limitXSpeed(timeStep);
 				
 				var vx = node.vx * timeStep;
-				const xp = node.x;
+				node.xp = node.x;
 				node.x += vx;
 				
 				// Collide horizontally
 				if(node.vx > 0) {
-					if(node.getCellRight(node.x, this.resolution) != node.getCellRight(xp, this.resolution)) {
+					if(node.getCellRight(node.x, this.resolution) != node.getCellRight(node.xp, this.resolution)) {
 						const yCells = node.getYCells(this.resolution);
 						
 						for(var y = yCells.start; y <= yCells.end; ++y) {
 							if(this.getWall(node.getCellRight(node.x, this.resolution), y) ||
-							(y != yCells.start && this.getCeiling(node.getCellRight(node.x, this.resolution), y))) {
-								node.vx = 0;
-								node.x = node.getCellRight(node.x, this.resolution) * this.resolution - node.width;
+								(y != yCells.start && this.getCeiling(node.getCellRight(node.x, this.resolution), y))) {
+								node.collideCellRight(this.resolution);
 								
 								break;
 							}
@@ -168,14 +191,13 @@ PlatformerGrid.prototype = {
 					}
 				}
 				else {
-					if(node.getCellLeft(node.x, this.resolution) != node.getCellLeft(xp, this.resolution)) {
+					if(node.getCellLeft(node.x, this.resolution) != node.getCellLeft(node.xp, this.resolution)) {
 						const yCells = node.getYCells(this.resolution);
 						
 						for(var y = yCells.start; y<= yCells.end; ++y) {
-							if(this.getWall(node.getCellLeft(xp, this.resolution), y) ||
-							(y != yCells.start && this.getCeiling(node.getCellLeft(node.x, this.resolution), y))) {
-								node.vx = 0;
-								node.x = node.getCellLeft(xp, this.resolution) * this.resolution;
+							if(this.getWall(node.getCellLeft(node.xp, this.resolution), y) ||
+								(y != yCells.start && this.getCeiling(node.getCellLeft(node.x, this.resolution), y))) {
+								node.collideCellLeft(this.resolution);
 								
 								break;
 							}
@@ -199,7 +221,7 @@ PlatformerGrid.prototype = {
 					}
 				}
 				
-				// Apply friction
+				// Apply friction if on ground
 				if(node.onGround) {
 					if(node.vx > 0) {
 						node.vx -= this.friction * timeStep;
@@ -226,20 +248,18 @@ PlatformerGrid.prototype = {
 				node.limitYSpeed(timeStep);
 				
 				var vy = node.vy * timeStep;
-				const yp = node.y;
+				node.yp = node.y;
 				node.y += vy;
 				
 				// Collide vertically
 				if(node.vy > 0) {
-					if(node.getCellBottom(node.y, this.resolution) != node.getCellBottom(yp, this.resolution)) {
+					if(node.getCellBottom(node.y, this.resolution) != node.getCellBottom(node.yp, this.resolution)) {
 						const xCells = node.getXCells(this.resolution);
 						
 						for(var x = xCells.start; x <= xCells.end; ++x) {
 							if(this.getCeiling(x, node.getCellBottom(node.y, this.resolution)) ||
 								(x != xCells.start && this.getWall(x, node.getCellBottom(node.y, this.resolution)))) {
-								node.onGround = true;
-								node.vy = 0;
-								node.y = node.getCellBottom(node.y, this.resolution) * this.resolution - node.height;
+								node.collideCellBottom(this.resolution);
 								
 								break;
 							}
@@ -247,14 +267,13 @@ PlatformerGrid.prototype = {
 					}
 				}
 				else {
-					if(node.getCellTop(node.y, this.resolution) != node.getCellTop(yp, this.resolution)) {
+					if(node.getCellTop(node.y, this.resolution) != node.getCellTop(node.yp, this.resolution)) {
 						const xCells = node.getXCells(this.resolution);
 						
 						for(var x = xCells.start; x <= xCells.end; ++x) {
-							if(this.getCeiling(x, node.getCellTop(yp, this.resolution)) ||
+							if(this.getCeiling(x, node.getCellTop(node.yp, this.resolution)) ||
 								(x != xCells.start && this.getWall(x, node.getCellTop(node.y, this.resolution)))) {
-								node.vy = 0;
-								node.y = node.getCellTop(yp, this.resolution) * this.resolution;
+								node.collideCellTop(this.resolution);
 								
 								break;
 							}
@@ -268,7 +287,7 @@ PlatformerGrid.prototype = {
 	drawGrid(context) {
 		for(var x = 0; x < this.width; ++x) {
 			for(var y = 0; y < this.height; ++y) {
-				var cell = this.cells[x + y * this.width];
+				var cell = this.getCell(x, y);
 				
 				if(cell.wall) {
 					context.strokeStyle = this.EDGE_STROKE_STYLE;
