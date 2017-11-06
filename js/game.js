@@ -32,7 +32,7 @@ function Game() {
 
 Game.prototype = {
   GRID_RESOLUTION: 32,
-  PLAYER_SIZE: 48,
+  PLAYER_SIZE: 24,
   PAINT_STROKE_STYLE: "lime",
   ERASE_STROKE_STYLE: "red",
   PLAYER_JUMP_SPEED: -650,
