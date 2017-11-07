@@ -1,6 +1,5 @@
 function Game() {
 	var canvas = this.getCanvas();
-	var context = canvas.getContext("2d");
 	
 	this.mouseX = this.mouseY = 0;
 	this.gridX = this.gridY = -1;
@@ -178,6 +177,11 @@ Game.prototype = {
 		
 		// Clear canvas
 		context.clearRect(0, 0, canvas.width, canvas.height);
+		context.fillStyle = "white";
+		context.beginPath();
+		context.rect(0, 0, canvas.width, canvas.height);
+		context.fill();
+		
 		this.grid.draw(context);
 		
 		// Draw selected edge
