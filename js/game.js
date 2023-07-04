@@ -106,7 +106,7 @@ Game.prototype = {
   },
 
   mouseMove(e) {
-    const bounds = this.canvas.getBoundingClientRect();
+    const bounds = this.getCanvas().getBoundingClientRect();
     const scaleX = this.canvas.width / bounds.width;
     const scaleY = this.canvas.height / bounds.height;
 
