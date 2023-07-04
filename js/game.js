@@ -106,10 +106,12 @@ Game.prototype = {
   },
 
   mouseMove(e) {
-    const bounds = this.getCanvas().getBoundingClientRect();
+    const bounds = this.canvas.getBoundingClientRect();
+    const scaleX = this.canvas.width / bounds.width;
+    const scaleY = this.canvas.height / bounds.height;
 
-    this.mouseX = e.clientX - bounds.left;
-    this.mouseY = e.clientY - bounds.top;
+    this.mouseX = (e.clientX - bounds.left) * scaleX;
+    this.mouseY = (e.clientY - bounds.top) * scaleY;
     this.gridX = Math.floor(this.mouseX / this.GRID_RESOLUTION);
     this.gridY = Math.floor(this.mouseY / this.GRID_RESOLUTION);
 
